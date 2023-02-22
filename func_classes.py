@@ -1,8 +1,9 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from config import PASS, USER, BASE_URL, HW_ROUTE, MARK_Z_UP_ROUTE, MARK_UP_ROUTE, LEFTOVERS_SKU_ROUTE, WH_GUID_MARKER,\
-                    PHOTO_PATH
+                    PHOTO_PATH, WRITE_OFF_ROUTE
 from abc import abstractmethod, ABC
+import base64
 
 
 class Source1C(ABC):
@@ -60,6 +61,7 @@ class WriteOff(Source1C):
         super().__init__()
         self.auth = HTTPBasicAuth(USER, PASS)
         self.route = LEFTOVERS_SKU_ROUTE
+        self.route_w = WRITE_OFF_ROUTE
         self.base_url = BASE_URL
         self.res_list = None
         self.category_list = None
@@ -94,10 +96,25 @@ class WriteOff(Source1C):
         return
 
     def save_photo(self, name, downloaded_file):
-        full_name = f'{PHOTO_PATH}{name}'
-        with open(full_name, 'wb') as new_file:
-            new_file.write(downloaded_file)
+        # full_name = f'{PHOTO_PATH}{name}'
+        # with open(full_name, 'wb') as new_file:
+        #     new_file.write(downloaded_file)
+        str_b64 = base64.b64encode(downloaded_file)
+        self.photo.append(str_b64)
 
-        self.photo.append(full_name)
+    def post_write_off(self, count, wh_guid):
+        data_dict = {
+            'wh_guid': wh_guid,
+            'good_guid': self.selected_good['GUID'],
+            'feature_guid': self.selected_good['GUID_feature'],
+            'count': count,
+            # 'photo_hash': self.photo[0],
+            'photo_hash': "jj",
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
+        response = requests.post(url=f"{self.base_url}hs{self.route_w}", data=data_dict, auth=self.auth, headers=headers)
+        if response.status_code == 200:
+           self.res_list = response.json()
+        return response.text
 
 

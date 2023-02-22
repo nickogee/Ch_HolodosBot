@@ -253,6 +253,40 @@ def run_bot():
 
         bot.send_message(message.from_user.id, f'{TEXTS["set_count"]}')
 
+    # Шаг 3.2.4 Пришло количество товара для списания - проверяем количество, вызываем метод 1С
+    @bot.message_handler(content_types=["text"], func=lambda message: prev_step(message) == '3.2.3')
+    def send_cunt_no_write_off(message):
+        nonlocal users_step
+
+        if not message.text.isdigit():
+            bot.send_message(message.from_user.id, TEXTS["error_not_num"])
+        else:
+            users_step[message.from_user.id] = '3.2.4'
+
+            # Для текущего юзера будем записывать объекты взаимодействия с 1с
+            user_dict = bot.current_states.data
+
+            # Извлечем объект write_off из данных юзера
+            write_off = user_dict[message.from_user.id]['write_off']
+
+            # Извлечем объект wh_obj из данных юзера
+            wh_obj = user_dict[message.from_user.id]['wh_obj']
+
+            count = int(message.text)
+            if write_off.selected_good['Count'] < count:
+                users_step[message.from_user.id] = '3.2.3'
+                bot.send_message(message.from_user.id, TEXTS['error_count'])
+            else:
+                # вызываем метод 1с
+                write_off.post_write_off(wh_obj.selected_wh['GUID'], count)
+
+
+
+
+
+
+
+
 
     bot.polling(none_stop=True, interval=3)
 
