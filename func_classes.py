@@ -45,16 +45,24 @@ class UpdateBalance(Source1C):
 
     def get_response(self):
 
-        response_1 = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+        # resp_mark_z_up = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+        resp_mark_z_up = self.get_mark_z_up()
 
-        if response_1.status_code == 200:
-            response_2 = requests.get(f"{self.base_url}hs{self.route_2.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
-            if response_2.status_code == 200:
-                return f'Обновлены остатки: {response_2.text}'
+        if resp_mark_z_up.status_code == 200:
+            # resp_mark_up = requests.get(f"{self.base_url}hs{self.route_2.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+            resp_mark_up = self.get_mark_up()
+            if resp_mark_up.status_code == 200:
+                return f'Обновлены остатки: {resp_mark_up.text}'
             else:
                 return f'Не удалось обновить остатки по складу {self.selected_wh["Name"]}'
         else:
             return f'Не удалось создать заказы по складу {self.selected_wh["Name"]}'
+
+    def get_mark_z_up(self):
+        return requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+
+    def get_mark_up(self):
+        return requests.get(f"{self.base_url}hs{self.route_2.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
 
 
 class WriteOff(Source1C):

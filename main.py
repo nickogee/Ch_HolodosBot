@@ -292,7 +292,7 @@ def run_bot():
 
     ######################################## Инвентаризация #######################################
 
-    # Шаг 3.3. Пришел выбранный сценарий inventory
+    # Шаг 3.3. Пришел выбранный сценарий inventory - подтянем в 1с заказы get_mark_z_up
     @bot.message_handler(content_types=['text'],
                          func=lambda message: message.text == KEYBOARDS_TEXT_FUNC['inventory'][0])
     def select_category(message):
@@ -306,6 +306,14 @@ def run_bot():
         # Извлечем объект wh_obj из данных юзера
         wh_obj = user_dict[message.from_user.id]['wh_obj']
 
+        if not user_dict[message.from_user.id].get('update_balance'):
+            update_balance = UpdateBalance()
+            update_balance.selected_wh = wh_obj.selected_wh
+        else:
+            # Извлечем объект wh_obj из данных юзера
+            update_balance = user_dict[message.from_user.id]['update_balance']
+
+        result = update_balance.get_mark_z_up()
 
 
 
