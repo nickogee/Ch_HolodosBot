@@ -3,7 +3,6 @@ TOKEN = '5218189724:AAFYZazEz1pB7p7HML9RId9JdRDDohfREn0'
 USER = 'test'
 PASS = 'hE4qo5jo'
 
-PHOTO_PATH = 'photo/'
 BASE_URL = 'http://192.168.194.143/trade/'
 HW_ROUTE = '/micromarket/get_wh/'
 

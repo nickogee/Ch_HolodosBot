@@ -126,6 +126,8 @@ def run_bot():
 
         bot.send_message(message.from_user.id, TEXTS['select_skript'], reply_markup=markup)
 
+    ######################################## Обновить остатки #######################################
+
     # Шаг 3.1. Пришел выбранный сценарий - update_balances
     @bot.message_handler(content_types=['text'], func=lambda message: message.text == KEYBOARDS_TEXT_FUNC['update_balances'][0])
     def start_update_balances(message):
@@ -151,6 +153,8 @@ def run_bot():
         btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
         markup.add(btn_back)
         bot.send_message(message.from_user.id, result, reply_markup=markup)
+
+    ######################################## Списание товара #######################################
 
     # Шаг 3.2. Пришел выбранный сценарий write_off_goods - выбираем категорию товара
     @bot.message_handler(content_types=['text'], func=lambda message: message.text == KEYBOARDS_TEXT_FUNC['write_off_goods'][0])
@@ -244,7 +248,7 @@ def run_bot():
         # Извлечем объект wh_obj из данных юзера
         write_off = user_dict[message.from_user.id]['write_off']
 
-        raw = message.photo[2].file_id
+        raw = message.photo[1].file_id
         name = raw + ".jpg"
         file_info = bot.get_file(raw)
         downloaded_file = bot.download_file(file_info.file_path)
@@ -253,7 +257,7 @@ def run_bot():
 
         bot.send_message(message.from_user.id, f'{TEXTS["set_count"]}')
 
-    # Шаг 3.2.4 Пришло количество товара для списания - проверяем количество, вызываем метод 1С
+    # Шаг 3.2.4 Пришло количество товара для списания - проверяем количество, вызываем метод 1С, конец сценария
     @bot.message_handler(content_types=["text"], func=lambda message: prev_step(message) == '3.2.3')
     def send_cunt_no_write_off(message):
         nonlocal users_step
@@ -278,8 +282,29 @@ def run_bot():
                 bot.send_message(message.from_user.id, TEXTS['error_count'])
             else:
                 # вызываем метод 1с
-                write_off.post_write_off(wh_obj.selected_wh['GUID'], count)
+                result = write_off.post_write_off(wh_obj.selected_wh['GUID'], count)
 
+                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, result, reply_markup=markup)
+
+    ######################################## Инвентаризация #######################################
+
+    # Шаг 3.3. Пришел выбранный сценарий inventory
+    @bot.message_handler(content_types=['text'],
+                         func=lambda message: message.text == KEYBOARDS_TEXT_FUNC['inventory'][0])
+    def select_category(message):
+        nonlocal users_step
+
+        users_step[message.from_user.id] = '3.3'
+
+        # Для текущего юзера будем записывать объекты взаимодействия с 1с
+        user_dict = bot.current_states.data
+
+        # Извлечем объект wh_obj из данных юзера
+        wh_obj = user_dict[message.from_user.id]['wh_obj']
 
 
 
