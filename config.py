@@ -1,4 +1,9 @@
-TOKEN = '5218189724:AAFYZazEz1pB7p7HML9RId9JdRDDohfREn0'
+
+
+with open('TOKEN', 'r') as t_file:
+    TOKEN = t_file.read()
+
+
 
 USER = 'test'
 PASS = 'hE4qo5jo'

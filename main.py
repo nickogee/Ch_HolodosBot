@@ -1,6 +1,6 @@
 from config import TOKEN
 from keyboards_text import KEYBOARDS_TEXT_FUNC, TEXTS
-from func_classes import UpdateBalance, WareHouses, WriteOff
+from func_classes import UpdateBalance, WareHouses, WriteOff, Inventory
 
 import telebot.callback_data
 import telebot
@@ -80,6 +80,8 @@ def run_bot():
         users_step[message.from_user.id] = '1'
 
         wh_obj = WareHouses()
+
+        bot.send_message(message.from_user.id, TEXTS['wait'])
 
         # Получим склады Микромаркета из 1С
         wh_obj.get_response()
@@ -292,10 +294,9 @@ def run_bot():
 
     ######################################## Инвентаризация #######################################
 
-    # Шаг 3.3. Пришел выбранный сценарий inventory - подтянем в 1с заказы get_mark_z_up
-    @bot.message_handler(content_types=['text'],
-                         func=lambda message: message.text == KEYBOARDS_TEXT_FUNC['inventory'][0])
-    def select_category(message):
+    # Шаг 3.3. Пришел выбранный сценарий inventory - подтянем в 1с заказы get_mark_z_up и начинаем инвентаризацию
+    @bot.message_handler(content_types=['text'], func=lambda message: message.text == KEYBOARDS_TEXT_FUNC['inventory'][0])
+    def start_inventory(message):
         nonlocal users_step
 
         users_step[message.from_user.id] = '3.3'
@@ -313,10 +314,114 @@ def run_bot():
             # Извлечем объект wh_obj из данных юзера
             update_balance = user_dict[message.from_user.id]['update_balance']
 
+        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
+
         result = update_balance.get_mark_z_up()
 
+        # if not result.status_code == 200:
+        #     btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+        #     markup.add(btn_back)
+        #     bot.send_message(message.from_user.id, result.text, reply_markup=markup)
+        # else:
+        inventory = Inventory()
+        inventory.selected_wh = wh_obj.selected_wh
 
+        # Получим остатки по складу
+        inventory.get_response()
 
+        # Поместим inventory в данные юзера
+        user_dict[message.from_user.id]['inventory'] = inventory
+
+        btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
+        markup.add(btn_back)
+        bot.send_message(message.from_user.id, TEXTS['success_mark_z_up'], reply_markup=markup)
+
+    # Шаг 3.4. Перебор категорий
+    @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.3')
+    def pop_category(message):
+        nonlocal users_step
+
+        # Для текущего юзера будем записывать объекты взаимодействия с 1с
+        user_dict = bot.current_states.data
+
+        # Извлечем объект inventory из данных юзера
+        inventory = user_dict[message.from_user.id]['inventory']
+
+        if inventory.res_list:
+            users_step[message.from_user.id] = '3.4'
+
+            # Извлекаем очередной словарь категории
+            cat_name, cat_guid, goods_arr = inventory.pop_next_category()
+
+            # Массив с товарами ложим в "результаты инвентаризации"
+            inventory.goods_list = goods_arr
+
+            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
+            markup.add(btn_back)
+
+            bot.send_message(message.from_user.id, f"{TEXTS['invent_category']} - {cat_name}", reply_markup=markup)
+        else:
+
+            users_step[message.from_user.id] = '3.6'
+            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['end_invent'][0])
+            markup.add(btn_back)
+
+            bot.send_message(message.from_user.id, TEXTS['invent_done'], reply_markup=markup)
+
+    # Шаг 3.5. Перебор товаров
+    @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.5')
+    @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.4')
+    def pop_good(message):
+        nonlocal users_step
+
+        # Для текущего юзера будем записывать объекты взаимодействия с 1с
+        user_dict = bot.current_states.data
+
+        # Извлечем объект inventory из данных юзера
+        inventory = user_dict[message.from_user.id]['inventory']
+
+        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
+        markup.add(btn_back)
+
+        # Если пришло количество - это количество по последней позиции в "результаты инвентаризации"
+        if prev_step(message) == '3.5' and message.text.isdigit():
+            inventory.invent_goods_list[-1]['inv_count'] = int(message.text)
+
+        if inventory.goods_list:
+            users_step[message.from_user.id] = '3.5'
+
+            # Извлечем следующий товар
+            curr_good = inventory.goods_list.pop()
+
+            # Добавим его в список "результаты инвентаризации"
+            inventory.invent_goods_list.append(curr_good)
+
+            bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
+        else:
+            users_step[message.from_user.id] = '3.3'
+            bot.send_message(message.from_user.id, f"{TEXTS['next_category']}", reply_markup=markup)
+
+    # Шаг 3.6. Окончание инвентаризации, отправка запроса с результатами в 1С
+    @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.6')
+    def pop_good(message):
+        nonlocal users_step
+
+        users_step[message.from_user.id] = '3.6'
+
+        # Для текущего юзера будем записывать объекты взаимодействия с 1с
+        user_dict = bot.current_states.data
+
+        # Извлечем объект inventory из данных юзера
+        inventory = user_dict[message.from_user.id]['inventory']
+
+        if inventory.invent_goods_list:
+            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+            markup.add(btn_back)
+            bot.send_message(message.from_user.id, TEXTS['begin'], reply_markup=markup)
 
 
 

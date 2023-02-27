@@ -124,3 +124,22 @@ class WriteOff(Source1C):
         return response.text
 
 
+class Inventory(Source1C):
+    def __init__(self):
+        super().__init__()
+        self.auth = HTTPBasicAuth(USER, PASS)
+        self.route = LEFTOVERS_SKU_ROUTE
+        self.route_2 = None
+        self.base_url = BASE_URL
+        self.res_list = None
+        self.goods_list = None
+        self.invent_goods_list = []
+
+    def get_response(self):
+        response = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+        if response.status_code == 200:
+            self.res_list = response.json()
+        return
+
+    def pop_next_category(self):
+        return self.res_list.pop().values()
