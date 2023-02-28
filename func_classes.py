@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from config import PASS, USER, BASE_URL, HW_ROUTE, MARK_Z_UP_ROUTE, MARK_UP_ROUTE, LEFTOVERS_SKU_ROUTE, WH_GUID_MARKER,\
-                    WRITE_OFF_ROUTE
+                    WRITE_OFF_ROUTE, INVENTORY_RESULT_ROUTE
 from abc import abstractmethod, ABC
 import base64
 
@@ -129,7 +129,7 @@ class Inventory(Source1C):
         super().__init__()
         self.auth = HTTPBasicAuth(USER, PASS)
         self.route = LEFTOVERS_SKU_ROUTE
-        self.route_2 = None
+        self.route_2 = INVENTORY_RESULT_ROUTE
         self.base_url = BASE_URL
         self.res_list = None
         self.goods_list = None
@@ -143,3 +143,13 @@ class Inventory(Source1C):
 
     def pop_next_category(self):
         return self.res_list.pop().values()
+
+    def post_inv_result(self):
+        data_dict = {
+            "wh_guid": self.selected_wh['GUID'],
+            "result": self.invent_goods_list,
+        }
+
+        headers = {"Content-Type": "application/JSON;  charset=utf-8"}
+        response = requests.post(url=f"{self.base_url}hs{self.route_2}", json=data_dict, auth=self.auth, headers=headers)
+        return response.text

@@ -318,23 +318,23 @@ def run_bot():
 
         result = update_balance.get_mark_z_up()
 
-        # if not result.status_code == 200:
-        #     btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
-        #     markup.add(btn_back)
-        #     bot.send_message(message.from_user.id, result.text, reply_markup=markup)
-        # else:
-        inventory = Inventory()
-        inventory.selected_wh = wh_obj.selected_wh
+        if not result.status_code == 200:
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+            markup.add(btn_back)
+            bot.send_message(message.from_user.id, result.text, reply_markup=markup)
+        else:
+            inventory = Inventory()
+            inventory.selected_wh = wh_obj.selected_wh
 
-        # Получим остатки по складу
-        inventory.get_response()
+            # Получим остатки по складу
+            inventory.get_response()
 
-        # Поместим inventory в данные юзера
-        user_dict[message.from_user.id]['inventory'] = inventory
+            # Поместим inventory в данные юзера
+            user_dict[message.from_user.id]['inventory'] = inventory
 
-        btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
-        markup.add(btn_back)
-        bot.send_message(message.from_user.id, TEXTS['success_mark_z_up'], reply_markup=markup)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
+            markup.add(btn_back)
+            bot.send_message(message.from_user.id, TEXTS['success_mark_z_up'], reply_markup=markup)
 
     # Шаг 3.4. Перебор категорий
     @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.3')
@@ -418,10 +418,14 @@ def run_bot():
         inventory = user_dict[message.from_user.id]['inventory']
 
         if inventory.invent_goods_list:
+
+            # Отправляем результаты инвентаризации в 1С
+            response_txt = inventory.post_inv_result()
+
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
-            bot.send_message(message.from_user.id, TEXTS['begin'], reply_markup=markup)
+            bot.send_message(message.from_user.id, response_txt, reply_markup=markup)
 
 
 
