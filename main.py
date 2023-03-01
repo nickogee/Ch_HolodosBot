@@ -25,11 +25,11 @@ def run_bot():
                 break
         return None
 
-    def split_catalog_list(markup, catalog_list):
+    def split_catalog_list(markup, catalog_list, width: int = 4):
 
         while len(catalog_list) > 0:
 
-            if len(catalog_list) >= 4:
+            if len(catalog_list) >= 4 and width == 4:
                 btn1, btn2, btn3, btm4 = types.KeyboardButton(catalog_list.pop()), \
                                         types.KeyboardButton(catalog_list.pop()), \
                                         types.KeyboardButton(catalog_list.pop()), \
@@ -37,14 +37,14 @@ def run_bot():
 
                 markup.add(btn1, btn2, btn3, btm4)
 
-            elif len(catalog_list) == 3:
+            elif len(catalog_list) == 3 and width >= 3:
                 btn1, btn2, btn3 = types.KeyboardButton(catalog_list.pop()), \
                     types.KeyboardButton(catalog_list.pop()), \
                     types.KeyboardButton(catalog_list.pop())
 
                 markup.add(btn1, btn2, btn3)
 
-            elif len(catalog_list) == 2:
+            elif len(catalog_list) == 2 and width >= 2:
                 btn1, btn2 = types.KeyboardButton(catalog_list.pop()), \
                     types.KeyboardButton(catalog_list.pop())
 
@@ -209,7 +209,7 @@ def run_bot():
 
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
         if write_off.goods_name_list:
-            split_catalog_list(markup, write_off.goods_name_list.copy())
+            split_catalog_list(markup, write_off.goods_name_list.copy(), width=1)
 
             btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
