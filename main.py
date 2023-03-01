@@ -149,7 +149,7 @@ def run_bot():
         result = update_balance.get_response()
 
         # Поместим update_balance в данные юзера
-        user_dict[str(message.from_user.id)]['update_balance'] = update_balance
+        user_dict[message.from_user.id]['update_balance'] = update_balance
 
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
         btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])

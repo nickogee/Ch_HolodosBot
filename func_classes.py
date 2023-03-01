@@ -30,9 +30,10 @@ class WareHouses(Source1C):
         self.wh_dict_list = None
 
     def get_response(self):
-        response = requests.get(f"{self.base_url}hs{self.route}", auth=self.auth)
-        self.wh_dict_list = response.json()
-        self.wh_name_list = [i['Name'] for i in self.wh_dict_list]
+        response = requests.get(f"{self.base_url}hs{self.route}", auth=self.auth, verify=False)
+        if response.status_code == 200:
+            self.wh_dict_list = response.json()
+            self.wh_name_list = [i['Name'] for i in self.wh_dict_list]
         return
 
 class UpdateBalance(Source1C):
@@ -45,11 +46,9 @@ class UpdateBalance(Source1C):
 
     def get_response(self):
 
-        # resp_mark_z_up = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
         resp_mark_z_up = self.get_mark_z_up()
 
         if resp_mark_z_up.status_code == 200:
-            # resp_mark_up = requests.get(f"{self.base_url}hs{self.route_2.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
             resp_mark_up = self.get_mark_up()
             if resp_mark_up.status_code == 200:
                 return f'Обновлены остатки: {resp_mark_up.text}'
@@ -59,10 +58,10 @@ class UpdateBalance(Source1C):
             return f'Не удалось создать заказы по складу {self.selected_wh["Name"]}'
 
     def get_mark_z_up(self):
-        return requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+        return requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth, verify=False)
 
     def get_mark_up(self):
-        return requests.get(f"{self.base_url}hs{self.route_2.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+        return requests.get(f"{self.base_url}hs{self.route_2.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth, verify=False)
 
 
 class WriteOff(Source1C):
@@ -80,7 +79,7 @@ class WriteOff(Source1C):
 
     def get_response(self):
 
-        response = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+        response = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth, verify=False)
         if response.status_code == 200:
             self.res_list = response.json()
         return
@@ -120,7 +119,7 @@ class WriteOff(Source1C):
         }
 
         headers = {"Content-Type": "application/JSON;  charset=utf-8"}
-        response = requests.post(url=f"{self.base_url}hs{self.route_2}", json=data_dict, auth=self.auth, headers=headers)
+        response = requests.post(url=f"{self.base_url}hs{self.route_2}", json=data_dict, auth=self.auth, headers=headers, verify=False)
         return response.text
 
 
@@ -136,7 +135,7 @@ class Inventory(Source1C):
         self.invent_goods_list = []
 
     def get_response(self):
-        response = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth)
+        response = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth, verify=False)
         if response.status_code == 200:
             self.res_list = response.json()
         return
@@ -151,5 +150,5 @@ class Inventory(Source1C):
         }
 
         headers = {"Content-Type": "application/JSON;  charset=utf-8"}
-        response = requests.post(url=f"{self.base_url}hs{self.route_2}", json=data_dict, auth=self.auth, headers=headers)
+        response = requests.post(url=f"{self.base_url}hs{self.route_2}", json=data_dict, auth=self.auth, headers=headers, verify=False)
         return response.text
