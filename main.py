@@ -428,8 +428,6 @@ def run_bot():
             bot.send_message(message.from_user.id, response_txt, reply_markup=markup)
 
 
-
-
     bot.polling(none_stop=True, interval=3)
 
 
