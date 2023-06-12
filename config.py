@@ -1,6 +1,7 @@
 
 
-with open('TOKEN', 'r') as t_file:
+# with open('TOKEN', 'r') as t_file:
+with open('Ch_HolodosBot/TOKEN', 'r') as t_file:
     TOKEN = t_file.read()
 
 
