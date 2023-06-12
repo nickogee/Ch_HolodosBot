@@ -131,7 +131,7 @@ class Inventory(Source1C):
         self.route_2 = INVENTORY_RESULT_ROUTE
         self.base_url = BASE_URL
         self.res_list = None
-        self.goods_list = None
+        self.goods_list = []
         self.invent_goods_list = []
 
     def get_response(self):

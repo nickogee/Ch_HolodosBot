@@ -306,7 +306,7 @@ def run_bot():
 
         # Извлечем объект wh_obj из данных юзера
         wh_obj = user_dict[message.from_user.id]['wh_obj']
-
+   
         if not user_dict[message.from_user.id].get('update_balance'):
             update_balance = UpdateBalance()
             update_balance.selected_wh = wh_obj.selected_wh
@@ -350,17 +350,33 @@ def run_bot():
         if inventory.res_list:
             users_step[message.from_user.id] = '3.4'
 
+            inventory.goods_list = []
+
             # Извлекаем очередной словарь категории
-            cat_name, cat_guid, goods_arr = inventory.pop_next_category()
+            while inventory.res_list:
 
-            # Массив с товарами ложим в "результаты инвентаризации"
-            inventory.goods_list = goods_arr
+                cat_name, cat_guid, goods_arr = inventory.pop_next_category()
 
-            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
-            markup.add(btn_back)
+                # Массив с товарами ложим в "результаты инвентаризации"
+                inventory.goods_list += goods_arr
 
-            bot.send_message(message.from_user.id, f"{TEXTS['invent_category']} - {cat_name}", reply_markup=markup)
+            # -- dev --
+            # markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+            # btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
+            # markup.add(btn_back)
+
+            # bot.send_message(message.from_user.id, f"{TEXTS['invent_category']} - {cat_name}", reply_markup=markup)
+
+            if inventory.goods_list:
+                users_step[message.from_user.id] = '3.5'
+
+                # Извлечем следующий товар
+                curr_good = inventory.goods_list.pop()
+
+                # Добавим его в список "результаты инвентаризации"
+                inventory.invent_goods_list.append(curr_good)
+
+                bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
         else:
 
             users_step[message.from_user.id] = '3.6'
@@ -401,8 +417,17 @@ def run_bot():
 
             bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
         else:
-            users_step[message.from_user.id] = '3.3'
-            bot.send_message(message.from_user.id, f"{TEXTS['next_category']}", reply_markup=markup)
+            # --dev--
+            # users_step[message.from_user.id] = '3.3'
+            # bot.send_message(message.from_user.id, f"{TEXTS['next_category']}", reply_markup=markup)
+            
+            users_step[message.from_user.id] = '3.6'
+            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['end_invent'][0])
+            markup.add(btn_back)
+
+            bot.send_message(message.from_user.id, TEXTS['invent_done'], reply_markup=markup)
+
 
     # Шаг 3.6. Окончание инвентаризации, отправка запроса с результатами в 1С
     @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.6')
