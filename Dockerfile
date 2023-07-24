@@ -6,6 +6,5 @@ ENV TOKEN=${token}
 COPY requirements.txt ./
 RUN pip install --upgrade pip &&\
     pip install --no-cache-dir -r requirements.txt
-RUN echo 1
 COPY / .
 CMD ["python", "./main.py"]
