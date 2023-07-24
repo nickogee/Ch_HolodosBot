@@ -1,8 +1,15 @@
+import os
 
 
+try:
+    # docker build -t choco_holodos --build-arg token=token_string ./
+    TOKEN = os.environ['TOKEN']
+except KeyError:
+    print('Не установлено значение переменной окружения TOKEN')
+      
 # with open('TOKEN', 'r') as t_file:
-with open('Ch_HolodosBot/TOKEN', 'r') as t_file:
-    TOKEN = t_file.read()
+# with open('Ch_HolodosBot/TOKEN', 'r') as t_file:
+    # TOKEN = t_file.read()
 
 
 
