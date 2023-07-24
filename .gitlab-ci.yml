@@ -1,0 +1,29 @@
+image: docker-proxy.choco.kz/docker:19.03.11
+
+services:
+  - name: docker-proxy.choco.kz/docker:19.03.11-dind
+    alias: docker
+
+variables:
+  REGISTRY: 'docker-registry.choco.kz'
+  RELEASE_IMAGE: "$REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$CI_COMMIT_REF_SLUG"
+
+
+stages:
+  - build
+  # - deploy
+
+docker-build:
+  stage: build
+  tags:
+    - docker
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build -t ${RELEASE_IMAGE} --build-arg token=1342334273:AAFK9Ap-XTJsDixhIZKOhYLktIhLht0pMwc ./ --no-cache
+    - docker push ${RELEASE_IMAGE}
+    - docker rmi ${RELEASE_IMAGE}
+
+ rules:
+    - if: $CI_COMMIT_BRANCH
+      exists:
+        - Dockerfile
