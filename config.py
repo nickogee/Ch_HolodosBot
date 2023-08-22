@@ -12,10 +12,17 @@ except KeyError:
     # TOKEN = t_file.read()
 
 
+try:
+    # docker build -t choco_holodos --build-arg pass_1c=hE4qo5jo ./
+    PASS_1C = os.environ['PASS_1C']
+except KeyError:
+    print('Не установлено значение переменной окружения PASS_1C')
+      
 
 # USER = 'test'
 USER = 'bot_Holodos'
-PASS = 'hE4qo5jo'
+# PASS = 'hE4qo5jo'
+PASS = PASS_1C
 
 # BASE_URL = 'http://192.168.194.143/trade/'
 BASE_URL = 'https://192.168.100.5:8443/trade/'
