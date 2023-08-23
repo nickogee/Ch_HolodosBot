@@ -20,6 +20,6 @@ docker-build:
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - mkdir -p ~/.docker && echo ${NEXUS_REGISTRY} | base64 -d > ~/.docker/config.json
-    - docker build -t ${RELEASE_IMAGE} --build-arg token=1342334273:AAFK9Ap-XTJsDixhIZKOhYLktIhLht0pMwc ./ --no-cache
+    - docker build -t ${RELEASE_IMAGE} --build-arg token=1342334273:AAFK9Ap-XTJsDixhIZKOhYLktIhLht0pMwc --build-arg pass_1c=hE4qo5jo ./ --no-cache
     - docker push ${RELEASE_IMAGE}
     - docker rmi ${RELEASE_IMAGE}
