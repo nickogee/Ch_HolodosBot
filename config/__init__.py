@@ -1,3 +1,4 @@
+
 import os
 
 
@@ -6,10 +7,6 @@ try:
     TOKEN = os.environ['TOKEN']
 except KeyError:
     print('Не установлено значение переменной окружения TOKEN')
-      
-# with open('TOKEN', 'r') as t_file:
-# with open('Ch_HolodosBot/TOKEN', 'r') as t_file:
-    # TOKEN = t_file.read()
 
 
 try:
@@ -19,9 +16,7 @@ except KeyError:
     print('Не установлено значение переменной окружения PASS_1C')
       
 
-# USER = 'test'
 USER = 'bot_Holodos'
-# PASS = 'hE4qo5jo'
 PASS = PASS_1C
 
 # BASE_URL = 'http://192.168.194.143/trade/'
