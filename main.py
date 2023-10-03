@@ -57,7 +57,7 @@ def run_bot():
         return
 
     def prev_step(message):
-        return users_step[message.from_user.id]
+        return users_step.get(message.from_user.id)
 
     # шаг 0 - /start
     @bot.message_handler(commands=['start'])
@@ -87,9 +87,9 @@ def run_bot():
         wh_obj.get_response()
 
         # Для текущего юзера будем записывать шаг, на котором он находится, и объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
-        user_dict[message.from_user.id] = {}
-        user_dict[message.from_user.id]['wh_obj'] = wh_obj
+        users_dict = bot.current_states.data
+        users_dict[message.from_user.id] = {}
+        users_dict[message.from_user.id]['wh_obj'] = wh_obj
 
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=3)
         if wh_obj.wh_name_list:
@@ -108,25 +108,38 @@ def run_bot():
         users_step[message.from_user.id] = '2'
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+            markup.add(btn_back)
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
+        else:
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
 
-        # Извлечем объект wh_obj из данных юзера
-        wh_obj = user_dict[message.from_user.id]['wh_obj']
+            if not wh_obj:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
+                # Уставновим выбранный склад в атрибут объекта
+                find_selected_wh(wh_obj, message.text)
 
-        # Уставновим выбранный склад в атрибут объекта
-        find_selected_wh(wh_obj, message.text)
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=3)
 
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=3)
+                btn1 = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['update_balances'][0])
+                btn2 = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['write_off_goods'][0])
+                btn3 = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['inventory'][0])
+                markup.add(btn1, btn2, btn3)
 
-        btn1 = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['update_balances'][0])
-        btn2 = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['write_off_goods'][0])
-        btn3 = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['inventory'][0])
-        markup.add(btn1, btn2, btn3)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
 
-        btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
-        markup.add(btn_back)
-
-        bot.send_message(message.from_user.id, TEXTS['select_skript'], reply_markup=markup)
+                bot.send_message(message.from_user.id, TEXTS['select_skript'], reply_markup=markup)
 
     ######################################## Обновить остатки #######################################
 
@@ -138,23 +151,37 @@ def run_bot():
         users_step[message.from_user.id] = '3.1'
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+            markup.add(btn_back)
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
+        else:
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
 
-        # Извлечем объект wh_obj из данных юзера
-        wh_obj = user_dict[message.from_user.id]['wh_obj']
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
 
-        update_balance = UpdateBalance()
+                update_balance = UpdateBalance()
 
-        update_balance.selected_wh = wh_obj.selected_wh
-        result = update_balance.get_response()
+                update_balance.selected_wh = wh_obj.selected_wh
+                result = update_balance.get_response()
 
-        # Поместим update_balance в данные юзера
-        user_dict[message.from_user.id]['update_balance'] = update_balance
+                # Поместим update_balance в данные юзера
+                users_dict[message.from_user.id]['update_balance'] = update_balance
 
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
-        btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
-        markup.add(btn_back)
-        bot.send_message(message.from_user.id, result, reply_markup=markup)
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, result, reply_markup=markup)
 
     ######################################## Списание товара #######################################
 
@@ -165,32 +192,49 @@ def run_bot():
 
         users_step[message.from_user.id] = '3.2'
 
+       # Для текущего юзера будем записывать объекты взаимодействия с 1с
+        users_dict = bot.current_states.data
+
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
-
-        # Извлечем объект wh_obj из данных юзера
-        wh_obj = user_dict[message.from_user.id]['wh_obj']
-
-        write_off = WriteOff()
-
-        write_off.selected_wh = wh_obj.selected_wh
-        write_off.get_response()
-        write_off.set_category_list()
-
-        # Поместим write_off в данные юзера
-        user_dict[message.from_user.id]['write_off'] = write_off
-
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
-        if write_off.category_list:
-            split_catalog_list(markup, write_off.category_list.copy())
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
             btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
-            bot.send_message(message.from_user.id, TEXTS['select_category'], reply_markup=markup)
-
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
         else:
-            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
-            markup.add(btn_back)
-            bot.send_message(message.from_user.id, TEXTS['error_category'], reply_markup=markup)
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
+
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
+            
+                write_off = WriteOff()
+
+                write_off.selected_wh = wh_obj.selected_wh
+                write_off.get_response()
+                write_off.set_category_list()
+
+                # Поместим write_off в данные юзера
+                users_dict[message.from_user.id]['write_off'] = write_off
+
+                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
+                if write_off.category_list:
+                    split_catalog_list(markup, write_off.category_list.copy())
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, TEXTS['select_category'], reply_markup=markup)
+
+                else:
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, TEXTS['error_category'], reply_markup=markup)
 
     # Шаг 3.2.1 Пришла выбранная категория - выбираем товар
     @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.2')
@@ -200,25 +244,42 @@ def run_bot():
         users_step[message.from_user.id] = '3.2.1'
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
-
-        # Извлечем объект wh_obj из данных юзера
-        write_off = user_dict[message.from_user.id]['write_off']
-
-        write_off.set_goods_lists(category_name=message.text)
-
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
-        if write_off.goods_name_list:
-            split_catalog_list(markup, write_off.goods_name_list.copy(), width=1)
-
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
             btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
-            bot.send_message(message.from_user.id, TEXTS['select_goods'], reply_markup=markup)
-
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
         else:
-            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
-            markup.add(btn_back)
-            bot.send_message(message.from_user.id, TEXTS['error_goods'], reply_markup=markup)
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
+
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
+
+                # Извлечем объект wh_obj из данных юзера
+                write_off = users_dict[message.from_user.id]['write_off']
+
+                write_off.set_goods_lists(category_name=message.text)
+
+                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
+                if write_off.goods_name_list:
+                    split_catalog_list(markup, write_off.goods_name_list.copy(), width=1)
+
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, TEXTS['select_goods'], reply_markup=markup)
+
+                else:
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, TEXTS['error_goods'], reply_markup=markup)
 
     # Шаг 3.2.2 Пришел выбранный товар - просим отправить фото
     @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.2.1')
@@ -228,14 +289,31 @@ def run_bot():
         users_step[message.from_user.id] = '3.2.2'
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+            markup.add(btn_back)
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
+        else:
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
 
-        # Извлечем объект wh_obj из данных юзера
-        write_off = user_dict[message.from_user.id]['write_off']
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
+            
+                # Извлечем объект wh_obj из данных юзера
+                write_off = users_dict[message.from_user.id]['write_off']
 
-        write_off.set_selected_good(message.text)
+                write_off.set_selected_good(message.text)
 
-        bot.send_message(message.from_user.id, f'{TEXTS["send_photo"]}: \n{message.text}')
+                bot.send_message(message.from_user.id, f'{TEXTS["send_photo"]}: \n{message.text}')
 
     # Шаг 3.2.3 Пришло фото товара - сохраняем фото, просим указать количество для списания
     @bot.message_handler(content_types=["photo"], func=lambda message: prev_step(message) == '3.2.2')
@@ -245,19 +323,36 @@ def run_bot():
         users_step[message.from_user.id] = '3.2.3'
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+            markup.add(btn_back)
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
+        else:
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
 
-        # Извлечем объект wh_obj из данных юзера
-        write_off = user_dict[message.from_user.id]['write_off']
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
 
-        raw = message.photo[1].file_id
-        name = raw + ".jpg"
-        file_info = bot.get_file(raw)
-        downloaded_file = bot.download_file(file_info.file_path)
+                # Извлечем объект wh_obj из данных юзера
+                write_off = users_dict[message.from_user.id]['write_off']
 
-        write_off.save_photo(name=name, downloaded_file=downloaded_file)
+                raw = message.photo[1].file_id
+                name = raw + ".jpg"
+                file_info = bot.get_file(raw)
+                downloaded_file = bot.download_file(file_info.file_path)
 
-        bot.send_message(message.from_user.id, f'{TEXTS["set_count"]}')
+                write_off.save_photo(name=name, downloaded_file=downloaded_file)
+
+                bot.send_message(message.from_user.id, f'{TEXTS["set_count"]}')
 
     # Шаг 3.2.4 Пришло количество товара для списания - проверяем количество, вызываем метод 1С, конец сценария
     @bot.message_handler(content_types=["text"], func=lambda message: prev_step(message) == '3.2.3')
@@ -270,27 +365,41 @@ def run_bot():
             users_step[message.from_user.id] = '3.2.4'
 
             # Для текущего юзера будем записывать объекты взаимодействия с 1с
-            user_dict = bot.current_states.data
-
-            # Извлечем объект write_off из данных юзера
-            write_off = user_dict[message.from_user.id]['write_off']
-
-            # Извлечем объект wh_obj из данных юзера
-            wh_obj = user_dict[message.from_user.id]['wh_obj']
-
-            count = int(message.text)
-            if write_off.selected_good['Count'] < count:
-                users_step[message.from_user.id] = '3.2.3'
-                bot.send_message(message.from_user.id, TEXTS['error_count'])
-            else:
-                # вызываем метод 1с
-                result = write_off.post_write_off(wh_obj.selected_wh['GUID'], count)
-
-                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-
+            users_dict = bot.current_states.data
+            if not users_dict:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
                 btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
                 markup.add(btn_back)
-                bot.send_message(message.from_user.id, result, reply_markup=markup)
+                bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
+            else:
+                # Извлечем объект wh_obj из данных юзера
+                user_dt = users_dict.get(message.from_user.id)
+                if user_dt:
+                    wh_obj = user_dt.get('wh_obj')
+
+                if not wh_obj or not wh_obj.selected_wh:
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+                else:
+
+                    # Извлечем объект write_off из данных юзера
+                    write_off = users_dict[message.from_user.id]['write_off']
+
+                    count = int(message.text)
+                    if write_off.selected_good['Count'] < count:
+                        users_step[message.from_user.id] = '3.2.3'
+                        bot.send_message(message.from_user.id, TEXTS['error_count'])
+                    else:
+                        # вызываем метод 1с
+                        result = write_off.post_write_off(wh_obj.selected_wh['GUID'], count)
+
+                        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+
+                        btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                        markup.add(btn_back)
+                        bot.send_message(message.from_user.id, result, reply_markup=markup)
 
     ######################################## Инвентаризация #######################################
 
@@ -302,39 +411,53 @@ def run_bot():
         users_step[message.from_user.id] = '3.3'
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
-
-        # Извлечем объект wh_obj из данных юзера
-        wh_obj = user_dict[message.from_user.id]['wh_obj']
-   
-        if not user_dict[message.from_user.id].get('update_balance'):
-            update_balance = UpdateBalance()
-            update_balance.selected_wh = wh_obj.selected_wh
-        else:
-            # Извлечем объект wh_obj из данных юзера
-            update_balance = user_dict[message.from_user.id]['update_balance']
-
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
-
-        result = update_balance.get_mark_z_up()
-
-        if not result.status_code == 200:
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
             btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
-            bot.send_message(message.from_user.id, result.text, reply_markup=markup)
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
         else:
-            inventory = Inventory()
-            inventory.selected_wh = wh_obj.selected_wh
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
 
-            # Получим остатки по складу
-            inventory.get_response()
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
+    
+                if not users_dict[message.from_user.id].get('update_balance'):
+                    update_balance = UpdateBalance()
+                    update_balance.selected_wh = wh_obj.selected_wh
+                else:
+                    # Извлечем объект wh_obj из данных юзера
+                    update_balance = users_dict[message.from_user.id]['update_balance']
 
-            # Поместим inventory в данные юзера
-            user_dict[message.from_user.id]['inventory'] = inventory
+                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
 
-            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
-            markup.add(btn_back)
-            bot.send_message(message.from_user.id, TEXTS['success_mark_z_up'], reply_markup=markup)
+                result = update_balance.get_mark_z_up()
+
+                if not result.status_code == 200:
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, result.text, reply_markup=markup)
+                else:
+                    inventory = Inventory()
+                    inventory.selected_wh = wh_obj.selected_wh
+
+                    # Получим остатки по складу
+                    inventory.get_response()
+
+                    # Поместим inventory в данные юзера
+                    users_dict[message.from_user.id]['inventory'] = inventory
+
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, TEXTS['success_mark_z_up'], reply_markup=markup)
 
     # Шаг 3.4. Перебор категорий
     @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.3')
@@ -342,49 +465,66 @@ def run_bot():
         nonlocal users_step
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
-
-        # Извлечем объект inventory из данных юзера
-        inventory = user_dict[message.from_user.id]['inventory']
-
-        if inventory.res_list:
-            users_step[message.from_user.id] = '3.4'
-
-            inventory.goods_list = []
-
-            # Извлекаем очередной словарь категории
-            while inventory.res_list:
-
-                cat_name, cat_guid, goods_arr = inventory.pop_next_category()
-
-                # Массив с товарами ложим в "результаты инвентаризации"
-                inventory.goods_list += goods_arr
-
-            # -- dev --
-            # markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-            # btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
-            # markup.add(btn_back)
-
-            # bot.send_message(message.from_user.id, f"{TEXTS['invent_category']} - {cat_name}", reply_markup=markup)
-
-            if inventory.goods_list:
-                users_step[message.from_user.id] = '3.5'
-
-                # Извлечем следующий товар
-                curr_good = inventory.goods_list.pop()
-
-                # Добавим его в список "результаты инвентаризации"
-                inventory.invent_goods_list.append(curr_good)
-
-                bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
-        else:
-
-            users_step[message.from_user.id] = '3.6'
-            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['end_invent'][0])
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
+        else:
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
 
-            bot.send_message(message.from_user.id, TEXTS['invent_done'], reply_markup=markup)
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
+            
+                # Извлечем объект inventory из данных юзера
+                inventory = users_dict[message.from_user.id]['inventory']
+
+                if inventory.res_list:
+                    users_step[message.from_user.id] = '3.4'
+
+                    inventory.goods_list = []
+
+                    # Извлекаем очередной словарь категории
+                    while inventory.res_list:
+
+                        cat_name, cat_guid, goods_arr = inventory.pop_next_category()
+
+                        # Массив с товарами ложим в "результаты инвентаризации"
+                        inventory.goods_list += goods_arr
+
+                    # -- dev --
+                    # markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+                    # btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
+                    # markup.add(btn_back)
+
+                    # bot.send_message(message.from_user.id, f"{TEXTS['invent_category']} - {cat_name}", reply_markup=markup)
+
+                    if inventory.goods_list:
+                        users_step[message.from_user.id] = '3.5'
+
+                        # Извлечем следующий товар
+                        curr_good = inventory.goods_list.pop()
+
+                        # Добавим его в список "результаты инвентаризации"
+                        inventory.invent_goods_list.append(curr_good)
+
+                        bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
+                else:
+
+                    users_step[message.from_user.id] = '3.6'
+                    markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['end_invent'][0])
+                    markup.add(btn_back)
+
+                    bot.send_message(message.from_user.id, TEXTS['invent_done'], reply_markup=markup)
 
     # Шаг 3.5. Перебор товаров
     @bot.message_handler(content_types=['text'], func=lambda message: prev_step(message) == '3.5')
@@ -393,40 +533,57 @@ def run_bot():
         nonlocal users_step
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
-
-        # Извлечем объект inventory из данных юзера
-        inventory = user_dict[message.from_user.id]['inventory']
-
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-        btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
-        markup.add(btn_back)
-
-        # Если пришло количество - это количество по последней позиции в "результаты инвентаризации"
-        if prev_step(message) == '3.5' and message.text.isdigit():
-            inventory.invent_goods_list[-1]['inv_count'] = int(message.text)
-
-        if inventory.goods_list:
-            users_step[message.from_user.id] = '3.5'
-
-            # Извлечем следующий товар
-            curr_good = inventory.goods_list.pop()
-
-            # Добавим его в список "результаты инвентаризации"
-            inventory.invent_goods_list.append(curr_good)
-
-            bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
-        else:
-            # --dev--
-            # users_step[message.from_user.id] = '3.3'
-            # bot.send_message(message.from_user.id, f"{TEXTS['next_category']}", reply_markup=markup)
-            
-            users_step[message.from_user.id] = '3.6'
-            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['end_invent'][0])
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
+        else:
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
 
-            bot.send_message(message.from_user.id, TEXTS['invent_done'], reply_markup=markup)
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
+            
+                # Извлечем объект inventory из данных юзера
+                inventory = users_dict[message.from_user.id]['inventory']
+
+                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
+                markup.add(btn_back)
+
+                # Если пришло количество - это количество по последней позиции в "результаты инвентаризации"
+                if prev_step(message) == '3.5' and message.text.isdigit():
+                    inventory.invent_goods_list[-1]['inv_count'] = int(message.text)
+
+                if inventory.goods_list:
+                    users_step[message.from_user.id] = '3.5'
+
+                    # Извлечем следующий товар
+                    curr_good = inventory.goods_list.pop()
+
+                    # Добавим его в список "результаты инвентаризации"
+                    inventory.invent_goods_list.append(curr_good)
+
+                    bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
+                else:
+                    # --dev--
+                    # users_step[message.from_user.id] = '3.3'
+                    # bot.send_message(message.from_user.id, f"{TEXTS['next_category']}", reply_markup=markup)
+                    
+                    users_step[message.from_user.id] = '3.6'
+                    markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['end_invent'][0])
+                    markup.add(btn_back)
+
+                    bot.send_message(message.from_user.id, TEXTS['invent_done'], reply_markup=markup)
 
 
     # Шаг 3.6. Окончание инвентаризации, отправка запроса с результатами в 1С
@@ -437,20 +594,37 @@ def run_bot():
         users_step[message.from_user.id] = '3.6'
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        user_dict = bot.current_states.data
-
-        # Извлечем объект inventory из данных юзера
-        inventory = user_dict[message.from_user.id]['inventory']
-
-        if inventory.invent_goods_list:
-
-            # Отправляем результаты инвентаризации в 1С
-            response_txt = inventory.post_inv_result()
-
-            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        users_dict = bot.current_states.data
+        if not users_dict:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
             btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
-            bot.send_message(message.from_user.id, response_txt, reply_markup=markup)
+            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
+        else:
+            # Извлечем объект wh_obj из данных юзера
+            user_dt = users_dict.get(message.from_user.id)
+            if user_dt:
+                wh_obj = user_dt.get('wh_obj')
+
+            if not wh_obj or not wh_obj.selected_wh:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                markup.add(btn_back)
+                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+            else:
+            
+                # Извлечем объект inventory из данных юзера
+                inventory = users_dict[message.from_user.id]['inventory']
+
+                if inventory.invent_goods_list:
+
+                    # Отправляем результаты инвентаризации в 1С
+                    response_txt = inventory.post_inv_result()
+
+                    markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, response_txt, reply_markup=markup)
 
 
     bot.polling(none_stop=True, interval=3)

@@ -19,7 +19,6 @@ except KeyError:
 USER = 'bot_Holodos'
 PASS = PASS_1C
 
-# BASE_URL = 'http://192.168.194.143/trade/'
 BASE_URL = 'https://192.168.100.5:8443/trade/'
 
 HW_ROUTE = '/micromarket/get_wh/'
