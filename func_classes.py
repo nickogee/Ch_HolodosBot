@@ -4,6 +4,7 @@ from config import PASS, USER, BASE_URL, HW_ROUTE, MARK_Z_UP_ROUTE, MARK_UP_ROUT
                     WRITE_OFF_ROUTE, INVENTORY_RESULT_ROUTE
 from abc import abstractmethod, ABC
 import base64
+import datetime
 
 
 class Source1C(ABC):
@@ -133,20 +134,39 @@ class Inventory(Source1C):
         self.res_list = None
         self.goods_list = []
         self.invent_goods_list = []
+        self.timestamp_st = ''
 
     def get_response(self):
         response = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth, verify=False)
         if response.status_code == 200:
             self.res_list = response.json()
+
+            now = datetime.datetime.now()
+            day_str = str(now.day)
+            month_str = str(now.month)
+            hour_str = str(now.hour)
+            minute_str = str(now.minute)
+            second_str = str(now.second)
+
+            now_day = day_str if len(day_str) == 2 else ("0" + day_str)
+            now_month = month_str if len(month_str) == 2 else ("0" + month_str)
+            now_hour = hour_str if len(hour_str) == 2 else ("0" + hour_str)
+            now_min = minute_str if len(minute_str) == 2 else ("0" + minute_str)
+            now_sec = second_str if len(second_str) == 2 else ("0" + second_str)
+            
+            timestamp_str = f'{str(now.year)}{now_month}{now_day}{now_hour}{now_min}{now_sec}'
+            self.timestamp_st = timestamp_str
         return
 
     def pop_next_category(self):
         return self.res_list.pop().values()
 
     def post_inv_result(self):
+        
         data_dict = {
             "wh_guid": self.selected_wh['GUID'],
             "result": self.invent_goods_list,
+            "timestamp": self.timestamp_st,
         }
 
         headers = {"Content-Type": "application/JSON;  charset=utf-8"}

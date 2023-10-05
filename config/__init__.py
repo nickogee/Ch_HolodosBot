@@ -7,19 +7,20 @@ try:
     TOKEN = os.environ['TOKEN']
 except KeyError:
     print('Не установлено значение переменной окружения TOKEN')
-
+    
 
 try:
     # docker build -t choco_holodos --build-arg pass_1c=hE4qo5jo ./
     PASS_1C = os.environ['PASS_1C']
 except KeyError:
-    print('Не установлено значение переменной окружения PASS_1C')
-      
+    print('Не установлено значение переменной окружения PASS_1C')  
+
 
 USER = 'bot_Holodos'
 PASS = PASS_1C
 
-BASE_URL = 'https://192.168.100.5:8443/trade/'
+BASE_URL = 'https://192.168.100.5:8443/trade/' # Prod
+# BASE_URL = 'https://192.168.100.122/trade/'  # Dev
 
 HW_ROUTE = '/micromarket/get_wh/'
 WH_GUID_MARKER = '@WH_GUID@'
