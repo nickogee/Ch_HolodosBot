@@ -9,5 +9,8 @@ COPY requirements.txt ./
 RUN apt-get update
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
+RUN rm -rf /etc/localtime
+RUN ln -s /usr/share/zoneinfo/Asia/Almaty /etc/localtime
+RUN echo "Asia/Almaty" > /etc/timezone
 COPY / .
 CMD ["python", "./main.py"]
