@@ -7,13 +7,14 @@ try:
     TOKEN = os.environ['TOKEN']
 except KeyError:
     print('Не установлено значение переменной окружения TOKEN')
-    
+
 
 try:
-    # docker build -t choco_holodos --build-arg pass_1c=hE4qo5jo ./
+    # docker build -t choco_holodos --build-arg pass_1c=pass_str ./
     PASS_1C = os.environ['PASS_1C']
 except KeyError:
     print('Не установлено значение переменной окружения PASS_1C')  
+
 
 
 USER = 'bot_Holodos'

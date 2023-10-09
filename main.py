@@ -4,6 +4,7 @@ from func_classes import UpdateBalance, WareHouses, WriteOff, Inventory
 
 import telebot.callback_data
 import telebot
+import uuid
 
 from telebot import types
 
@@ -90,6 +91,9 @@ def run_bot():
         users_dict = bot.current_states.data
         users_dict[message.from_user.id] = {}
         users_dict[message.from_user.id]['wh_obj'] = wh_obj
+
+        # Для текущего сеанса будем генерировать ГУИД, который будет идентификатором фонового задания в 1с
+        users_dict[message.from_user.id]['uuid'] = str(uuid.uuid4())
 
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=3)
         if wh_obj.wh_name_list:
@@ -448,6 +452,7 @@ def run_bot():
                 else:
                     inventory = Inventory()
                     inventory.selected_wh = wh_obj.selected_wh
+                    inventory.uuid = user_dt.get('uuid')
 
                     # Получим остатки по складу
                     inventory.get_response()

@@ -135,6 +135,7 @@ class Inventory(Source1C):
         self.goods_list = []
         self.invent_goods_list = []
         self.timestamp_st = ''
+        self.uuid = ''
 
     def get_response(self):
         response = requests.get(f"{self.base_url}hs{self.route.replace(WH_GUID_MARKER, self.selected_wh['GUID'])}", auth=self.auth, verify=False)
@@ -167,6 +168,7 @@ class Inventory(Source1C):
             "wh_guid": self.selected_wh['GUID'],
             "result": self.invent_goods_list,
             "timestamp": self.timestamp_st,
+            "uuid": self.uuid,
         }
 
         headers = {"Content-Type": "application/JSON;  charset=utf-8"}
