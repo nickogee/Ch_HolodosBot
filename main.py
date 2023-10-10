@@ -537,58 +537,66 @@ def run_bot():
     def pop_good(message):
         nonlocal users_step
 
-        # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        users_dict = bot.current_states.data
-        if not users_dict:
-            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
-            btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
-            markup.add(btn_back)
-            bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
-        else:
-            # Извлечем объект wh_obj из данных юзера
-            user_dt = users_dict.get(message.from_user.id)
-            if user_dt:
-                wh_obj = user_dt.get('wh_obj')
+        # Если пришло НЕ количество (не только цифры) - отправим сообщение о неверном вводе
+        if (prev_step(message) == '3.5') and (not message.text.isdigit()):
+            users_step[message.from_user.id] = '3.5'
+            bot.send_message(message.from_user.id, TEXTS["error_not_num"])
+        
+        # Если пришло количество - это количество по последней позиции в "результаты инвентаризации"
+        elif prev_step(message) == '3.5' and message.text.isdigit():
+            pev_count = int(message.text)
 
-            if not wh_obj or not wh_obj.selected_wh:
+            # Для текущего юзера будем записывать объекты взаимодействия с 1с
+            users_dict = bot.current_states.data
+            if not users_dict:
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
                 btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
                 markup.add(btn_back)
-                bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
+                bot.send_message(message.from_user.id, TEXTS['error_users_data'], reply_markup=markup)
             else:
-            
-                # Извлечем объект inventory из данных юзера
-                inventory = users_dict[message.from_user.id]['inventory']
+                # Извлечем объект wh_obj из данных юзера
+                user_dt = users_dict.get(message.from_user.id)
+                if user_dt:
+                    wh_obj = user_dt.get('wh_obj')
 
-                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-                btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
-                markup.add(btn_back)
-
-                # Если пришло количество - это количество по последней позиции в "результаты инвентаризации"
-                if prev_step(message) == '3.5' and message.text.isdigit():
-                    inventory.invent_goods_list[-1]['inv_count'] = int(message.text)
-
-                if inventory.goods_list:
-                    users_step[message.from_user.id] = '3.5'
-
-                    # Извлечем следующий товар
-                    curr_good = inventory.goods_list.pop()
-
-                    # Добавим его в список "результаты инвентаризации"
-                    inventory.invent_goods_list.append(curr_good)
-
-                    bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
+                if not wh_obj or not wh_obj.selected_wh:
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                    markup.add(btn_back)
+                    bot.send_message(message.from_user.id, TEXTS['error_not_wh'], reply_markup=markup)
                 else:
-                    # --dev--
-                    # users_step[message.from_user.id] = '3.3'
-                    # bot.send_message(message.from_user.id, f"{TEXTS['next_category']}", reply_markup=markup)
-                    
-                    users_step[message.from_user.id] = '3.6'
+                
+                    # Извлечем объект inventory из данных юзера
+                    inventory = users_dict[message.from_user.id]['inventory']
+
                     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['end_invent'][0])
+                    btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['ok'][0])
                     markup.add(btn_back)
 
-                    bot.send_message(message.from_user.id, TEXTS['invent_done'], reply_markup=markup)
+                    # Если пришло количество - это количество по последней позиции в "результаты инвентаризации"
+                    inventory.invent_goods_list[-1]['inv_count'] = pev_count
+
+                    if inventory.goods_list:
+                        users_step[message.from_user.id] = '3.5'
+
+                        # Извлечем следующий товар
+                        curr_good = inventory.goods_list.pop()
+
+                        # Добавим его в список "результаты инвентаризации"
+                        inventory.invent_goods_list.append(curr_good)
+
+                        bot.send_message(message.from_user.id, f"{TEXTS['set_count_inv']} {curr_good['Name']}")
+                    else:
+                        # --dev--
+                        # users_step[message.from_user.id] = '3.3'
+                        # bot.send_message(message.from_user.id, f"{TEXTS['next_category']}", reply_markup=markup)
+                        
+                        users_step[message.from_user.id] = '3.6'
+                        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+                        btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['end_invent'][0])
+                        markup.add(btn_back)
+
+                        bot.send_message(message.from_user.id, TEXTS['invent_done'], reply_markup=markup)
 
 
     # Шаг 3.6. Окончание инвентаризации, отправка запроса с результатами в 1С
