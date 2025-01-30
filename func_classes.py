@@ -22,16 +22,19 @@ class Source1C(ABC):
 
 
 class WareHouses(Source1C):
-    def __init__(self):
+    def __init__(self, city):
         super().__init__()
         self.auth = HTTPBasicAuth(USER, PASS)
         self.route = HW_ROUTE
         self.base_url = BASE_URL
         self.wh_name_list = None
         self.wh_dict_list = None
+        self.city = city
 
     def get_response(self):
-        response = requests.get(f"{self.base_url}hs{self.route}", auth=self.auth, verify=False)
+        url = f"{self.base_url}hs{self.route}"
+        params = {'city': self.city}
+        response = requests.get(url=url, params=params, auth=self.auth, verify=False)
         if response.status_code == 200:
             self.wh_dict_list = response.json()
             self.wh_name_list = [i['Name'] for i in self.wh_dict_list]

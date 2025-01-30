@@ -21,7 +21,7 @@ USER = 'bot_Holodos'
 PASS = PASS_1C
 
 BASE_URL = 'https://192.168.100.5:8443/trade/' # Prod
-# BASE_URL = 'https://192.168.100.122/trade/'  # Dev
+# BASE_URL = 'https://192.168.100.103/ut-dev-nikolay/'  # Dev
 
 HW_ROUTE = '/micromarket/get_wh/'
 WH_GUID_MARKER = '@WH_GUID@'

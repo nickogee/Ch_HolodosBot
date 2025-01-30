@@ -1,5 +1,5 @@
 from config import TOKEN
-from keyboards_text import KEYBOARDS_TEXT_FUNC, TEXTS
+from keyboards_text import KEYBOARDS_TEXT_FUNC, TEXTS, CITYS
 from func_classes import UpdateBalance, WareHouses, WriteOff, Inventory
 
 import telebot.callback_data
@@ -30,7 +30,16 @@ def run_bot():
 
         while len(catalog_list) > 0:
 
-            if len(catalog_list) >= 4 and width == 4:
+            if len(catalog_list) >= 5 and width == 5:
+                btn1, btn2, btn3, btm4, btm5 = types.KeyboardButton(catalog_list.pop()), \
+                                        types.KeyboardButton(catalog_list.pop()), \
+                                        types.KeyboardButton(catalog_list.pop()), \
+                                        types.KeyboardButton(catalog_list.pop()), \
+                                        types.KeyboardButton(catalog_list.pop())
+
+                markup.add(btn1, btn2, btn3, btm4, btm5)
+            
+            elif len(catalog_list) >= 4 and width == 4:
                 btn1, btn2, btn3, btm4 = types.KeyboardButton(catalog_list.pop()), \
                                         types.KeyboardButton(catalog_list.pop()), \
                                         types.KeyboardButton(catalog_list.pop()), \
@@ -60,7 +69,19 @@ def run_bot():
     def prev_step(message):
         return users_step.get(message.from_user.id)
 
-    # шаг 0 - /start
+    # # шаг 0 - /start
+    # @bot.message_handler(commands=['start'])
+    # def start(message):
+    #     nonlocal users_step
+
+    #     users_step[message.from_user.id] = '0'
+
+    #     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    #     btn1 = types.KeyboardButton(TEXTS['begin'])
+    #     markup.add(btn1)
+    #     bot.send_message(message.from_user.id, TEXTS['start'], reply_markup=markup)
+
+    # шаг 0 - /start Выбор города
     @bot.message_handler(commands=['start'])
     def start(message):
         nonlocal users_step
@@ -68,37 +89,47 @@ def run_bot():
         users_step[message.from_user.id] = '0'
 
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        btn1 = types.KeyboardButton(TEXTS['begin'])
-        markup.add(btn1)
-        bot.send_message(message.from_user.id, TEXTS['start'], reply_markup=markup)
+        
+        for city in CITYS.values():
+            btn = types.KeyboardButton(city)
+            markup.add(btn)
 
-    # Шаг 1. Пришло приветствие - выбор склада
+        bot.send_message(message.from_user.id, TEXTS['choise_city'], reply_markup=markup)
+    
+
+    # Шаг 1. Пришло приветствие или город - выбор склада
     @bot.message_handler(content_types=['text'], func=lambda message: message.text == TEXTS['begin'] or \
-                                                                      message.text == KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+                                                                        message.text in CITYS.values() or \
+                                                                        message.text == KEYBOARDS_TEXT_FUNC['back_to_start'][0])
     def select_wh(message):
         nonlocal users_step
 
-        users_step[message.from_user.id] = '1'
+        # Для текущего юзера будем записывать шаг, на котором он находится, и объекты взаимодействия с 1с
+        users_dict = bot.current_states.data
+        if not message.from_user.id in users_dict.keys():
+            users_dict[message.from_user.id] = {}
 
-        wh_obj = WareHouses()
+        users_step[message.from_user.id] = '1'
+        if message.text in CITYS.values():
+            users_dict[message.from_user.id]['city'] = message.text
+
+        cur_city = users_dict[message.from_user.id]['city']
+        wh_obj = WareHouses(city=cur_city)
 
         bot.send_message(message.from_user.id, TEXTS['wait'])
 
         # Получим склады Микромаркета из 1С
-        wh_obj.get_response()
-
-        # Для текущего юзера будем записывать шаг, на котором он находится, и объекты взаимодействия с 1с
-        users_dict = bot.current_states.data
-        users_dict[message.from_user.id] = {}
+        wh_obj.get_response() 
         users_dict[message.from_user.id]['wh_obj'] = wh_obj
 
         # Для текущего сеанса будем генерировать ГУИД, который будет идентификатором фонового задания в 1с
         users_dict[message.from_user.id]['uuid'] = str(uuid.uuid4())
+        row_width=4
 
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=3)
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=row_width)
         if wh_obj.wh_name_list:
-            split_catalog_list(markup, wh_obj.wh_name_list.copy())
-            bot.send_message(message.from_user.id, TEXTS['select_wh'], reply_markup=markup)
+            split_catalog_list(markup, wh_obj.wh_name_list.copy(), width=row_width)
+            bot.send_message(message.from_user.id, TEXTS['select_wh'] + cur_city, reply_markup=markup)
         else:
             btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
             markup.add(btn_back)
@@ -196,8 +227,8 @@ def run_bot():
 
         users_step[message.from_user.id] = '3.2'
 
-       # Для текущего юзера будем записывать объекты взаимодействия с 1с
-        users_dict = bot.current_states.data
+    #    # Для текущего юзера будем записывать объекты взаимодействия с 1с
+    #     users_dict = bot.current_states.data
 
         # Для текущего юзера будем записывать объекты взаимодействия с 1с
         users_dict = bot.current_states.data
@@ -227,10 +258,11 @@ def run_bot():
 
                 # Поместим write_off в данные юзера
                 users_dict[message.from_user.id]['write_off'] = write_off
+                row_width = 4
 
-                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=4)
+                markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, row_width=row_width)
                 if write_off.category_list:
-                    split_catalog_list(markup, write_off.category_list.copy())
+                    split_catalog_list(markup, write_off.category_list.copy(), width=row_width)
                     btn_back = types.KeyboardButton(KEYBOARDS_TEXT_FUNC['back_to_start'][0])
                     markup.add(btn_back)
                     bot.send_message(message.from_user.id, TEXTS['select_category'], reply_markup=markup)
