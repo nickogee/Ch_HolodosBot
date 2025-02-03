@@ -69,20 +69,22 @@ def run_bot():
     def prev_step(message):
         return users_step.get(message.from_user.id)
 
-    # # шаг 0 - /start
-    # @bot.message_handler(commands=['start'])
-    # def start(message):
-    #     nonlocal users_step
-
-    #     users_step[message.from_user.id] = '0'
-
-    #     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    #     btn1 = types.KeyboardButton(TEXTS['begin'])
-    #     markup.add(btn1)
-    #     bot.send_message(message.from_user.id, TEXTS['start'], reply_markup=markup)
-
-    # шаг 0 - /start Выбор города
+    # шаг 0 - /start
     @bot.message_handler(commands=['start'])
+    def start(message):
+        nonlocal users_step
+
+        users_step[message.from_user.id] = '0'
+
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        btn1 = types.KeyboardButton(TEXTS['begin'])
+        markup.add(btn1)
+        bot.send_message(message.from_user.id, TEXTS['start'], reply_markup=markup)
+
+
+    # шаг 0.5 Пришло приветствие - Выбор города
+    @bot.message_handler(content_types=['text'], func=lambda message: message.text == TEXTS['begin'] or \
+                                                                        message.text == KEYBOARDS_TEXT_FUNC['back_to_start'][0])
     def start(message):
         nonlocal users_step
 
@@ -97,10 +99,14 @@ def run_bot():
         bot.send_message(message.from_user.id, TEXTS['choise_city'], reply_markup=markup)
     
 
-    # Шаг 1. Пришло приветствие или город - выбор склада
-    @bot.message_handler(content_types=['text'], func=lambda message: message.text == TEXTS['begin'] or \
-                                                                        message.text in CITYS.values() or \
-                                                                        message.text == KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+    # # Шаг 1. Пришло приветствие или город - выбор склада
+    # @bot.message_handler(content_types=['text'], func=lambda message: message.text == TEXTS['begin'] or \
+    #                                                                     message.text in CITYS.values() or \
+    # 
+    #                                                                     message.text == KEYBOARDS_TEXT_FUNC['back_to_start'][0])
+    
+    # Шаг 1. Пришел город - выбор склада
+    @bot.message_handler(content_types=['text'], func=lambda message: message.text in CITYS.values())
     def select_wh(message):
         nonlocal users_step
 
